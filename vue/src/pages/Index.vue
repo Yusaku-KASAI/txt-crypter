@@ -2,7 +2,7 @@
   <div :class="['app-wrapper', { 'simple-mode': isDecryptMode }]">
     <div class="card">
       <div v-if="!decryptedText">
-        <h1 v-if="!isDecryptMode" class="title">Secret Cipher</h1>
+        <h1 v-if="!isDecryptMode" class="title">Secret Cipher Pro</h1>
 
         <div class="field">
           <div class="input-with-icon">
@@ -53,23 +53,26 @@
         <div v-if="!isDecryptMode" class="field mt-10">
           <textarea
             v-model="mainText"
-            placeholder="暗号化するテキスト"
+            placeholder="暗号化したいテキスト"
             class="textarea-minimal"
           ></textarea>
         </div>
 
         <details class="advanced-settings">
-          <summary>反復回数: {{ iterations.toLocaleString() }}</summary>
-          <input
-            v-model.number="iterations"
-            type="number"
-            step="10000"
-            class="input-minimal small mt-5"
-          />
+          <summary>セキュリティ設定 (Iterations: {{ iterations.toLocaleString() }})</summary>
+          <div class="mt-5">
+            <label class="small-label">反復回数:</label>
+            <input
+              v-model.number="iterations"
+              type="number"
+              step="10000"
+              class="input-minimal small"
+            />
+          </div>
         </details>
 
-        <button @click="executeAction" class="btn-main mt-10">
-          {{ isDecryptMode ? "復号する" : "暗号化URLを生成" }}
+        <button @click="executeAction" class="btn-main mt-10" :disabled="isProcessing">
+          {{ isProcessing ? "処理中..." : isDecryptMode ? "復号する" : "暗号化URLを生成" }}
         </button>
 
         <div v-if="!isDecryptMode && generatedUrl" class="url-box mt-10">
@@ -129,7 +132,7 @@
           </div>
         </div>
         <button @click="copy(decryptedText)" class="btn-copy-big">コピーする</button>
-        <button @click="reset" class="btn-reset">閉じる</button>
+        <button @click="reset" class="btn-reset">パスワード入力に戻る</button>
       </div>
 
       <p v-if="errorMsg" class="error-text">{{ errorMsg }}</p>
@@ -145,6 +148,7 @@ const password = ref("");
 const iterations = ref(100000);
 const mainText = ref("");
 const encryptedPayload = ref("");
+const saltHex = ref("");
 const decryptedText = ref("");
 const generatedUrl = ref("");
 const errorMsg = ref("");
@@ -152,14 +156,18 @@ const errorMsg = ref("");
 const isDecryptMode = ref(false);
 const isPasswordVisible = ref(false);
 const isResultVisible = ref(false);
+const isProcessing = ref(false);
 
 onMounted(() => {
   const params = new URLSearchParams(window.location.search);
   const txt = params.get("txt");
   const iter = params.get("iter");
-  if (txt) {
+  const s = params.get("s"); // Salt
+
+  if (txt && s) {
     isDecryptMode.value = true;
     encryptedPayload.value = txt;
+    saltHex.value = s;
     if (iter) iterations.value = parseInt(iter);
   }
 });
@@ -168,42 +176,64 @@ const executeAction = () => {
   isDecryptMode.value ? handleDecrypt() : handleEncrypt();
 };
 
-const deriveKey = (pass, iter) => {
-  const salt = CryptoJS.enc.Hex.parse("53656c66486f7374"); // 固定ソルト
+// 鍵生成 (PBKDF2) - 非同期を擬似的に扱えるように
+const deriveKey = (pass, salt, iter) => {
   return CryptoJS.PBKDF2(pass, salt, { keySize: 256 / 32, iterations: iter });
 };
 
 const handleEncrypt = () => {
   if (!password.value || !mainText.value) return;
-  try {
-    const key = deriveKey(password.value, iterations.value);
-    const encrypted = CryptoJS.AES.encrypt(mainText.value, key, {
-      iv: CryptoJS.enc.Hex.parse("00000000000000000000000000000000"),
-    }).toString();
-    const baseUrl = window.location.origin + window.location.pathname;
-    generatedUrl.value = `${baseUrl}?txt=${encodeURIComponent(encrypted)}&iter=${iterations.value}`;
-    errorMsg.value = "";
-  } catch (e) {
-    errorMsg.value = "暗号化失敗";
-  }
+  isProcessing.value = true;
+
+  // 100ms待機してUIの更新（「処理中...」表示）を優先させる
+  setTimeout(() => {
+    try {
+      // 1. ランダムな128bitソルトを生成
+      const salt = CryptoJS.lib.WordArray.random(128 / 8);
+      // 2. 鍵を生成
+      const key = deriveKey(password.value, salt, iterations.value);
+      // 3. 固定IVでAES暗号化
+      const iv = CryptoJS.enc.Hex.parse("00000000000000000000000000000000");
+      const encrypted = CryptoJS.AES.encrypt(mainText.value, key, { iv: iv }).toString();
+
+      const baseUrl = window.location.origin + window.location.pathname;
+      // 4. 暗号文、ソルト(Hex)、反復回数をURLに含める
+      generatedUrl.value = `${baseUrl}?txt=${encodeURIComponent(encrypted)}&s=${salt.toString()}&iter=${iterations.value}`;
+      errorMsg.value = "";
+    } catch (e) {
+      errorMsg.value = "暗号化失敗";
+    } finally {
+      isProcessing.value = false;
+    }
+  }, 100);
 };
 
 const handleDecrypt = () => {
-  if (!password.value || !encryptedPayload.value) return;
-  try {
-    const key = deriveKey(password.value, iterations.value);
-    const bytes = CryptoJS.AES.decrypt(encryptedPayload.value, key, {
-      iv: CryptoJS.enc.Hex.parse("00000000000000000000000000000000"),
-    });
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    if (!decrypted) throw new Error();
-    decryptedText.value = decrypted;
-    isResultVisible.value = true;
-    errorMsg.value = "";
-  } catch (e) {
-    errorMsg.value = "パスワードが違います";
-    decryptedText.value = "";
-  }
+  if (!password.value || !encryptedPayload.value || !saltHex.value) return;
+  isProcessing.value = true;
+
+  setTimeout(() => {
+    try {
+      // 1. URLから取得したHex文字列をWordArrayに戻す
+      const salt = CryptoJS.enc.Hex.parse(saltHex.value);
+      const key = deriveKey(password.value, salt, iterations.value);
+      const iv = CryptoJS.enc.Hex.parse("00000000000000000000000000000000");
+
+      const bytes = CryptoJS.AES.decrypt(encryptedPayload.value, key, { iv: iv });
+      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+
+      if (!decrypted) throw new Error();
+
+      decryptedText.value = decrypted;
+      isResultVisible.value = true;
+      errorMsg.value = "";
+    } catch (e) {
+      errorMsg.value = "パスワードが違います";
+      decryptedText.value = "";
+    } finally {
+      isProcessing.value = false;
+    }
+  }, 100);
 };
 
 const reset = () => {
@@ -218,6 +248,7 @@ const copy = async (text) => {
 </script>
 
 <style scoped>
+/* スタイルは前回の「シンプルかつNotion親和」を継承し、さらに調整 */
 .app-wrapper {
   display: flex;
   justify-content: center;
@@ -228,6 +259,12 @@ const copy = async (text) => {
   width: 100%;
   max-width: 400px;
   padding: 5px;
+}
+.title {
+  font-size: 1rem;
+  margin: 0 0 15px;
+  text-align: center;
+  color: #333;
 }
 
 .input-with-icon {
@@ -252,19 +289,18 @@ const copy = async (text) => {
   border-color: #eee;
 }
 
-/* 復号結果表示：より大きく見やすく */
 .result-display {
   height: 100px;
-  font-size: 16px;
+  font-size: 15px;
   background: #fdfdfd;
   font-family: monospace;
-  border: 1px solid #2383e2;
+  border: 2px solid #2383e2;
 }
 .result-display.masked {
   color: transparent;
   text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
   user-select: none;
-  border-color: #eee;
+  border: 1px solid #eee;
 }
 
 .icon-btn {
@@ -290,8 +326,11 @@ const copy = async (text) => {
   font-weight: bold;
   cursor: pointer;
 }
+.btn-main:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
 
-/* コピーボタン：復号成功時は目立たせる */
 .btn-copy-big {
   width: 100%;
   margin-top: 10px;
@@ -322,10 +361,13 @@ const copy = async (text) => {
 }
 .advanced-settings summary {
   cursor: pointer;
-  outline: none;
+}
+.small-label {
+  display: block;
+  margin-bottom: 2px;
 }
 .input-minimal.small {
-  width: 100px;
+  width: 110px;
   padding: 4px 8px;
   font-size: 11px;
 }
@@ -337,6 +379,8 @@ const copy = async (text) => {
 .small-text {
   font-size: 11px;
   color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .mt-10 {
   margin-top: 10px;
