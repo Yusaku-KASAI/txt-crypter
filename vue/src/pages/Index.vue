@@ -106,18 +106,6 @@
         <div class="button-row-bottom">
           <button @click="decryptStep = 'locked'" class="btn-gray flex-1">✕ 閉じる</button>
           <button @click="handleDecrypt" class="btn-red flex-2" :disabled="isProcessing">
-            <svg
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              class="mr-5"
-            >
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            </svg>
             復号
           </button>
         </div>
@@ -151,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
+import { ref, onMounted } from "vue";
 import CryptoJS from "crypto-js";
 
 const password = ref("");
@@ -165,7 +153,7 @@ const ivHex = ref("");
 const encryptedPayload = ref("");
 
 const isDecryptMode = ref(false);
-const decryptStep = ref("locked"); // 'locked', 'input', 'success'
+const decryptStep = ref("locked");
 const isPasswordVisible = ref(false);
 const isProcessing = ref(false);
 const timeLeft = ref(30);
@@ -176,13 +164,13 @@ onMounted(() => {
   const txt = params.get("txt");
   const s = params.get("s");
   const iter = params.get("iter");
-  const iv = params.get("iv"); // IVをURLから取得
+  const iv = params.get("iv");
 
   if (txt && s && iv) {
     isDecryptMode.value = true;
     encryptedPayload.value = txt;
     saltHex.value = s;
-    ivHex.value = iv; // IVをセット
+    ivHex.value = iv;
     if (iter) iterations.value = parseInt(iter);
   }
 });
@@ -193,17 +181,13 @@ const handleEncrypt = () => {
   setTimeout(() => {
     try {
       const salt = CryptoJS.lib.WordArray.random(128 / 8);
-      // ランダムなIVを生成 (128bit)
       const iv = CryptoJS.lib.WordArray.random(128 / 8);
-
       const key = CryptoJS.PBKDF2(password.value, salt, {
         keySize: 256 / 32,
         iterations: iterations.value,
       });
       const encrypted = CryptoJS.AES.encrypt(mainText.value, key, { iv: iv }).toString();
-
       const baseUrl = window.location.origin + window.location.pathname;
-      // URLに iv も含める
       generatedUrl.value = `${baseUrl}?txt=${encodeURIComponent(encrypted)}&s=${salt.toString()}&iv=${iv.toString()}&iter=${iterations.value}`;
     } catch (e) {
       errorMsg.value = "暗号化失敗";
@@ -219,16 +203,14 @@ const handleDecrypt = () => {
   setTimeout(() => {
     try {
       const salt = CryptoJS.enc.Hex.parse(saltHex.value);
-      const iv = CryptoJS.enc.Hex.parse(ivHex.value); // URLのIVを使用
+      const iv = CryptoJS.enc.Hex.parse(ivHex.value);
       const key = CryptoJS.PBKDF2(password.value, salt, {
         keySize: 256 / 32,
         iterations: iterations.value,
       });
-
       const bytes = CryptoJS.AES.decrypt(encryptedPayload.value, key, { iv: iv });
       const decrypted = bytes.toString(CryptoJS.enc.Utf8);
       if (!decrypted) throw new Error();
-
       decryptedText.value = decrypted;
       decryptStep.value = "success";
       startTimer();
@@ -256,13 +238,41 @@ const resetToLocked = () => {
   errorMsg.value = "";
 };
 
+/**
+ * 修正版コピー関数
+ * Notion等のiframe環境向けにFallback処理を追加
+ */
 const copy = async (t) => {
-  await navigator.clipboard.writeText(t);
+  try {
+    // 1. まずモダンなAPIを試行
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(t);
+    } else {
+      throw new Error("Clipboard API unavailable");
+    }
+  } catch (err) {
+    // 2. 失敗した場合、古い方式（textarea生成）を実行
+    const textArea = document.createElement("textarea");
+    textArea.value = t;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand("copy");
+    } catch (copyErr) {
+      console.error("Copy failed", copyErr);
+    }
+    document.body.removeChild(textArea);
+  }
   alert("コピーしました");
 };
 </script>
 
 <style scoped>
+/* スタイルは変更なしのため省略（前のコードのものをそのまま使用してください） */
 .app-wrapper {
   font-family: -apple-system, sans-serif;
   display: flex;
@@ -272,8 +282,6 @@ const copy = async (t) => {
 .is-decrypt-mode {
   padding: 0;
 }
-
-/* 共通パーツ */
 .input-base {
   border: 1px solid #ced4da;
   border-radius: 4px;
@@ -282,9 +290,6 @@ const copy = async (t) => {
   outline: none;
   width: 100%;
   box-sizing: border-box;
-}
-.input-base:focus {
-  border-color: #80bdff;
 }
 .btn-red {
   background: #d9534f;
@@ -311,8 +316,6 @@ const copy = async (t) => {
   color: #495057;
   margin-bottom: 5px;
 }
-
-/* 暗号化画面 */
 .encrypt-card {
   width: 100%;
   max-width: 500px;
@@ -346,17 +349,13 @@ const copy = async (t) => {
   display: flex;
   gap: 8px;
 }
-
-/* 復号画面：画像1枚目風（Locked Bar） */
 .decrypt-container {
   width: 100%;
 }
-
 .locked-bar {
   display: flex;
   align-items: center;
   width: 100%;
-  /* max-width: 600px; */
   border: 1px solid #dee2e6;
   border-radius: 6px;
   background: #fff;
@@ -378,11 +377,8 @@ const copy = async (t) => {
   display: flex;
   align-items: center;
 }
-
-/* 復号画面：画像2枚目風（Input UI） */
 .input-ui-container {
   width: 100%;
-  /* max-width: 600px; */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -425,11 +421,8 @@ const copy = async (t) => {
   padding: 10px;
   font-size: 15px;
 }
-
-/* 復号画面：画像3枚目風（Success UI） */
 .success-ui-card {
   width: 100%;
-  /* max-width: 600px; */
   border: 1px solid #dee2e6;
   border-radius: 6px;
   background: #fff;
@@ -451,9 +444,6 @@ const copy = async (t) => {
   color: #666;
   display: flex;
   margin-right: 15px;
-}
-.btn-icon-outline:hover {
-  background: #f8f9fa;
 }
 .timer-display {
   flex: 1;
@@ -477,8 +467,6 @@ const copy = async (t) => {
   color: #212529;
   word-break: break-all;
 }
-
-/* ユーティリティ */
 .w-full {
   width: 100%;
 }
@@ -495,9 +483,6 @@ const copy = async (t) => {
 .px-15 {
   padding-left: 15px;
   padding-right: 15px;
-}
-.mr-5 {
-  margin-right: 5px;
 }
 .mt-20 {
   margin-top: 20px;
