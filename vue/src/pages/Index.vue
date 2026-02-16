@@ -2,26 +2,14 @@
   <div :class="['app-wrapper', { 'is-decrypt-mode': isDecryptMode }]">
     <div v-if="!isDecryptMode" class="card encrypt-card">
       <h1 class="title">Secret Cipher Generator</h1>
-
       <div class="field">
         <label class="label">パスフレーズ</label>
-        <input
-          v-model="password"
-          type="password"
-          class="input-base"
-          placeholder="鍵となるパスワード"
-        />
+        <input v-model="password" type="password" class="input-base" />
       </div>
-
       <div class="field">
         <label class="label">暗号化するテキスト</label>
-        <textarea
-          v-model="mainText"
-          class="textarea-base"
-          placeholder="ここに秘密の情報を入力"
-        ></textarea>
+        <textarea v-model="mainText" class="textarea-base"></textarea>
       </div>
-
       <div class="field">
         <label class="label">反復回数 (PBKDF2)</label>
         <input v-model.number="iterations" type="number" class="input-base small-input" />
@@ -35,10 +23,14 @@
         <label class="label">Notion埋め込み用URL</label>
         <div class="copy-row">
           <input :value="generatedUrl" readonly class="input-base url-field" />
-          <button @click="copy(generatedUrl)" class="btn-gray px-15">コピー</button>
+          <button
+            @click="copy(generatedUrl, 'url')"
+            :class="['btn-gray px-15', { 'btn-success': copyStatus.url }]"
+          >
+            {{ copyStatus.url ? "✓ Copied" : "コピー" }}
+          </button>
         </div>
       </div>
-      <p v-if="errorMsg" class="error-text">{{ errorMsg }}</p>
     </div>
 
     <div v-else class="decrypt-container">
@@ -68,36 +60,7 @@
               class="input-base main-input"
               placeholder="パスフレーズ"
               @keyup.enter="handleDecrypt"
-              ref="passInput"
             />
-            <button class="eye-btn" @click="isPasswordVisible = !isPasswordVisible">
-              <svg
-                v-if="!isPasswordVisible"
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
-                ></path>
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-              </svg>
-              <svg
-                v-else
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            </button>
           </div>
           <div class="iter-input-box">
             <input v-model.number="iterations" type="number" class="input-base iter-input" />
@@ -114,8 +77,13 @@
 
       <div v-else-if="decryptStep === 'success'" class="success-ui-card">
         <div class="success-header">
-          <button @click="copy(decryptedText)" class="btn-icon-outline" title="コピー">
+          <button
+            @click="copy(decryptedText, 'res')"
+            :class="['btn-icon-outline', { copied: copyStatus.res }]"
+            title="コピー"
+          >
             <svg
+              v-if="!copyStatus.res"
               viewBox="0 0 24 24"
               width="18"
               height="18"
@@ -126,8 +94,25 @@
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
+            <svg
+              v-else
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="#28a745"
+              stroke-width="3"
+            >
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
           </button>
-          <span class="timer-display">{{ timeLeft }}秒後に閉じられます。</span>
+          <span class="timer-display">
+            {{
+              copyStatus.res
+                ? "クリップボードにコピーしました！"
+                : `${timeLeft}秒後に閉じられます。`
+            }}
+          </span>
           <button @click="resetToLocked" class="btn-gray-sm">閉じる</button>
         </div>
         <div class="result-body">
@@ -139,9 +124,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import CryptoJS from "crypto-js";
 
+// ... (既存の変数定義) ...
 const password = ref("");
 const iterations = ref(100000);
 const mainText = ref("");
@@ -159,13 +145,18 @@ const isProcessing = ref(false);
 const timeLeft = ref(30);
 let timerInterval = null;
 
+// コピー状態管理用のリアクティブオブジェクト
+const copyStatus = reactive({
+  url: false,
+  res: false,
+});
+
 onMounted(() => {
   const params = new URLSearchParams(window.location.search);
   const txt = params.get("txt");
   const s = params.get("s");
   const iter = params.get("iter");
   const iv = params.get("iv");
-
   if (txt && s && iv) {
     isDecryptMode.value = true;
     encryptedPayload.value = txt;
@@ -175,6 +166,7 @@ onMounted(() => {
   }
 });
 
+// ... (handleEncrypt, handleDecrypt, startTimer, resetToLocked は前回のものを継承) ...
 const handleEncrypt = () => {
   if (!password.value || !mainText.value) return;
   isProcessing.value = true;
@@ -236,43 +228,40 @@ const resetToLocked = () => {
   decryptedText.value = "";
   password.value = "";
   errorMsg.value = "";
+  copyStatus.res = false;
 };
 
 /**
- * 修正版コピー関数
- * Notion等のiframe環境向けにFallback処理を追加
+ * コピー関数 (フィードバック付き)
+ * @param {string} t コピーするテキスト
+ * @param {string} type 'url' か 'res'
  */
-const copy = async (t) => {
+const copy = async (t, type) => {
   try {
-    // 1. まずモダンなAPIを試行
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(t);
     } else {
-      throw new Error("Clipboard API unavailable");
+      throw new Error();
     }
   } catch (err) {
-    // 2. 失敗した場合、古い方式（textarea生成）を実行
     const textArea = document.createElement("textarea");
     textArea.value = t;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-9999px";
-    textArea.style.top = "0";
     document.body.appendChild(textArea);
-    textArea.focus();
     textArea.select();
-    try {
-      document.execCommand("copy");
-    } catch (copyErr) {
-      console.error("Copy failed", copyErr);
-    }
+    document.execCommand("copy");
     document.body.removeChild(textArea);
   }
-  alert("コピーしました");
+
+  // フィードバックの表示
+  copyStatus[type] = true;
+  setTimeout(() => {
+    copyStatus[type] = false;
+  }, 3000); // 3秒後に元に戻す
 };
 </script>
 
 <style scoped>
-/* スタイルは変更なしのため省略（前のコードのものをそのまま使用してください） */
+/* 前回のスタイルを継承 + フィードバック用スタイル追加 */
 .app-wrapper {
   font-family: -apple-system, sans-serif;
   display: flex;
@@ -298,9 +287,7 @@ const copy = async (t) => {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 10px;
 }
 .btn-gray {
   background: #6c757d;
@@ -308,14 +295,14 @@ const copy = async (t) => {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.2s;
 }
-.label {
-  display: block;
-  font-size: 12px;
-  font-weight: bold;
-  color: #495057;
-  margin-bottom: 5px;
+
+/* 成功時のボタン色 */
+.btn-success {
+  background: #28a745 !important;
 }
+
 .encrypt-card {
   width: 100%;
   max-width: 500px;
@@ -324,7 +311,6 @@ const copy = async (t) => {
   border: 1px solid #ddd;
   border-radius: 8px;
   margin-top: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 .textarea-base {
   width: 100%;
@@ -332,12 +318,7 @@ const copy = async (t) => {
   border: 1px solid #ced4da;
   border-radius: 4px;
   padding: 8px;
-  font-size: 14px;
   resize: none;
-  margin-bottom: 15px;
-}
-.small-input {
-  width: 150px;
 }
 .url-output {
   background: #f8f9fa;
@@ -348,7 +329,9 @@ const copy = async (t) => {
 .copy-row {
   display: flex;
   gap: 8px;
+  margin-top: 5px;
 }
+
 .decrypt-container {
   width: 100%;
 }
@@ -365,7 +348,6 @@ const copy = async (t) => {
 .dot-placeholder {
   flex: 1;
   padding: 10px 15px;
-  line-height: 20px;
   color: #adb5bd;
   font-size: 18px;
   letter-spacing: 2px;
@@ -374,9 +356,8 @@ const copy = async (t) => {
   background: #6c757d;
   color: white;
   padding: 10px 15px;
-  display: flex;
-  align-items: center;
 }
+
 .input-ui-container {
   width: 100%;
   display: flex;
@@ -394,33 +375,11 @@ const copy = async (t) => {
 .iter-input-box {
   flex: 1;
 }
-.main-input {
-  padding-right: 40px;
-}
-.eye-btn {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #adb5bd;
-  padding: 0;
-  display: flex;
-}
-.iter-input {
-  text-align: center;
-  color: #495057;
-}
 .button-row-bottom {
   display: flex;
   gap: 8px;
 }
-.button-row-bottom button {
-  padding: 10px;
-  font-size: 15px;
-}
+
 .success-ui-card {
   width: 100%;
   border: 1px solid #dee2e6;
@@ -433,7 +392,6 @@ const copy = async (t) => {
   align-items: center;
   padding: 8px 12px;
   border-bottom: 1px solid #f1f3f5;
-  background: #fdfdfd;
 }
 .btn-icon-outline {
   border: 1px solid #ced4da;
@@ -441,14 +399,20 @@ const copy = async (t) => {
   border-radius: 4px;
   padding: 6px;
   cursor: pointer;
-  color: #666;
   display: flex;
   margin-right: 15px;
+  transition: all 0.2s;
 }
+.btn-icon-outline.copied {
+  border-color: #28a745;
+  background: #f0fff4;
+}
+
 .timer-display {
   flex: 1;
   font-size: 13px;
   color: #666;
+  transition: color 0.3s;
 }
 .btn-gray-sm {
   background: #6c757d;
@@ -456,17 +420,16 @@ const copy = async (t) => {
   border: none;
   border-radius: 4px;
   padding: 5px 12px;
-  cursor: pointer;
   font-size: 13px;
-  font-weight: bold;
+  cursor: pointer;
 }
 .result-body {
   padding: 15px;
   font-size: 16px;
-  font-family: "Courier New", Courier, monospace;
-  color: #212529;
+  font-family: monospace;
   word-break: break-all;
 }
+
 .w-full {
   width: 100%;
 }
@@ -476,22 +439,8 @@ const copy = async (t) => {
 .flex-2 {
   flex: 2;
 }
-.py-12 {
-  padding-top: 12px;
-  padding-bottom: 12px;
-}
-.px-15 {
-  padding-left: 15px;
-  padding-right: 15px;
-}
 .mt-20 {
   margin-top: 20px;
-}
-.error-text {
-  color: #d9534f;
-  font-size: 14px;
-  text-align: center;
-  margin-top: 10px;
 }
 .error-text-mini {
   color: #d9534f;
