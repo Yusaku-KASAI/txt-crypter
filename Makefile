@@ -1,3 +1,19 @@
+.PHONY: check check-web check-target
+
+# One target per concern, so that CI can run each from only the files it reads.
+check: check-web check-target
+
+# Dependencies are installed when the lockfile is newer than what is installed.
+vue/node_modules/.package-lock.json: vue/package-lock.json
+	cd vue && npm ci
+
+check-web: vue/node_modules/.package-lock.json
+	cd vue && npm run build
+
+check-target:
+	shellcheck .devcontainer/*.sh
+	python3 .devcontainer/check-vscode-settings.py
+
 .PHONY: up
 up:
 	docker compose up -d

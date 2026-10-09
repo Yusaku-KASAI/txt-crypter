@@ -1,0 +1,70 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "/workspace"
+    ],
+    "allow": [
+      "Agent",
+      "Artifact",
+      "AskUserQuestion",
+      "Bash",
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "Edit(/**)",
+      "EnterPlanMode",
+      "EnterWorktree",
+      "ExitPlanMode",
+      "ExitWorktree",
+      "Glob",
+      "Grep",
+      "ListMcpResourcesTool",
+      "LSP",
+      "Monitor",
+      "NotebookEdit",
+      "PowerShell",
+      "PushNotification",
+      "Read",
+      "ReadMcpResourceDirTool",
+      "ReadMcpResourceTool",
+      "RemoteTrigger",
+      "ReportFindings",
+      "ScheduleWakeup",
+      "SendMessage",
+      "SendUserFile",
+      "ShareOnboardingGuide",
+      "Skill",
+      "TaskCreate",
+      "TaskGet",
+      "TaskList",
+      "TaskOutput",
+      "TaskStop",
+      "TaskUpdate",
+      "TodoWrite",
+      "ToolSearch",
+      "WaitForMcpServers",
+      "WebFetch",
+      "WebSearch",
+      "Workflow",
+      "mcp__ide__getDiagnostics"
+    ],
+    "ask": [],
+    "deny": []
+  },
+  "extraKnownMarketplaces": {
+    "acp-platform": {
+      "source": {
+        "source": "directory",
+        "path": "/workspace/agent-platform"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "roles@acp-platform": true,
+    "slack@acp-platform": true,
+    "github@acp-platform": true,
+    "rules@acp-platform": true,
+    "bell@acp-platform": true
+  }
+}

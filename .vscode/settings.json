@@ -1,82 +1,67 @@
 {
-  "editor.wordWrap": "on",
-  "files.eol": "\n",
-  "files.autoSave": "onFocusChange",
-  "files.associations": {
-    "*.blade.php": "blade"
-  },
-  "editor.formatOnSave": false,
+  // Keep identical to customizations.vscode.settings in .devcontainer/devcontainer.json (make check-target checks).
+  "claudeCode.respectGitIgnore": true,
+  "claudeCode.useCtrlEnterToSend": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
   "editor.tabSize": 2,
+  "editor.wordWrap": "on",
+  "files.autoSave": "onFocusChange",
+  "files.eol": "\n",
+  "accessibility.signals.terminalBell": {
+    "sound": "on"
+  },
+  "terminal.integrated.enableVisualBell": true, // in case the sound is missed
+  "terminal.integrated.bellDuration": 150,
+  "terminal.integrated.defaultProfile.linux": "tmux",
+  "terminal.integrated.profiles.linux": {
+    "bash": {
+      "path": "bash",
+      "icon": "terminal-bash"
+    },
+    "zsh": {
+      "path": "zsh"
+    },
+    "tmux": {
+      "overrideName": true,
+      "path": "bash",
+      "args": ["-c", "tmux new-session -A -s \"${PWD/$HOME/\\~}\""]
+    },
+    "tmux-new": {
+      "overrideName": true,
+      "path": "bash",
+      "args": ["-c", "tmux new-session"]
+    }
+  },
   "prettier.printWidth": 100,
   "prettier.tabWidth": 2,
-  "prettier.disableLanguages": ["blade"],
-  "intelephense.format.braces": "per",
-  "intelephense.format.enable": true,
-  "bladeFormatter.format.enabled": true,
-  "java.format.enabled": true,
-  "java.codeGeneration.generateComments": true,
+  "python.defaultInterpreterPath": "/usr/bin/python3",
+  // Keep the Python extension from injecting venv activation into terminal sessions.
+  "python.terminal.activateEnvironment": false,
+  "shellcheck.useWorkspaceRootAsCwd": true,
   "yaml.format.enable": true,
-  "[html]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[css]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[vue]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[json][jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[php]": {
-    "editor.tabSize": 4,
-    "editor.defaultFormatter": "bmewburn.vscode-intelephense-client",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[blade]": {
-    "editor.defaultFormatter": "shufo.vscode-blade-formatter",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": false
-  },
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[java]": {
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
-  "[c]": {
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true
-  },
   "[Dockerfile]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "files.autoSave": "onFocusChange",
     "editor.formatOnSave": true
   },
-  "[yml][yaml]": {
-    "editor.defaultFormatter": "redhat.vscode-yaml",
+  "[javascript][vue][css][html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "files.autoSave": "onFocusChange"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "files.autoSave": "onFocusChange"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "mkhl.shfmt",
+    "editor.formatOnSave": true,
+    "files.autoSave": "onFocusChange"
+  },
+  "[json][jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "files.autoSave": "onFocusChange",
     "editor.formatOnSave": true
   },
@@ -85,16 +70,9 @@
     "files.autoSave": "onFocusChange",
     "editor.formatOnSave": true
   },
-  "[terraform]": {
-    "editor.defaultFormatter": "hashicorp.terraform",
+  "[yml][yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
     "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true,
-    "editor.formatOnSaveMode": "file"
-  },
-  "[terraform-vars]": {
-    "editor.defaultFormatter": "hashicorp.terraform",
-    "files.autoSave": "onFocusChange",
-    "editor.formatOnSave": true,
-    "editor.formatOnSaveMode": "file"
+    "editor.formatOnSave": true
   }
 }
