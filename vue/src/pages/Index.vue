@@ -56,13 +56,14 @@
         <label class="label">反復回数 (PBKDF2)</label>
         <div class="iter-row">
           <input v-model.number="iterations" type="number" class="input-base iter-input-small" />
-          <span class="iter-hint">※100,000以上推奨</span>
+          <span class="iter-hint">※{{ MIN_ENCRYPT_ITERATIONS.toLocaleString() }}〜{{ MAX_ENCRYPT_ITERATIONS.toLocaleString() }}</span>
         </div>
       </div>
 
       <button @click="handleEncrypt" class="btn-red w-full py-12" :disabled="isProcessing">
         {{ isProcessing ? "生成中..." : "暗号化URLを生成" }}
       </button>
+      <p v-if="errorMsg" class="error-text-mini">{{ errorMsg }}</p>
 
       <div v-if="generatedUrl" class="url-output mt-20">
         <label class="label">Notion埋め込み用URL</label>
@@ -198,6 +199,12 @@
 import { ref, reactive, onMounted } from "vue";
 import CryptoJS from "crypto-js";
 
+// Only encryption is bounded: decryption must keep opening every link already shared. The minimum
+// keeps links from being cheap to brute-force; the maximum keeps decryption to seconds, since
+// PBKDF2 here blocks the main thread.
+const MIN_ENCRYPT_ITERATIONS = 100000;
+const MAX_ENCRYPT_ITERATIONS = 1000000;
+
 const password = ref("");
 const iterations = ref(100000);
 const mainText = ref("");
@@ -233,7 +240,14 @@ onMounted(() => {
 });
 
 const handleEncrypt = () => {
+  errorMsg.value = "";
+  generatedUrl.value = "";
   if (!password.value || !mainText.value) return;
+  const n = iterations.value;
+  if (!Number.isInteger(n) || n < MIN_ENCRYPT_ITERATIONS || n > MAX_ENCRYPT_ITERATIONS) {
+    errorMsg.value = `反復回数は${MIN_ENCRYPT_ITERATIONS.toLocaleString()}から${MAX_ENCRYPT_ITERATIONS.toLocaleString()}の整数にしてください`;
+    return;
+  }
   isProcessing.value = true;
   setTimeout(() => {
     try {
