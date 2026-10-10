@@ -23,6 +23,8 @@ services:
       - ${DEV_STATE_DIR:?run .devcontainer/init-host.sh}/claude:/home/node/.claude
       - ${DEV_STATE_DIR}/gh:/home/node/.config/gh
       - ${DEV_STATE_DIR}/history:/commandhistory
+      # VS Code's server, its extensions and chat history, kept across container rebuilds.
+      - vscode-server:/home/node/.vscode-server
       # Cache only: losing it costs a download.
       - npm-cache:/home/node/.npm
     environment:
@@ -35,6 +37,7 @@ services:
       - ACP_SERVER=http://control-plane:8787
 
 volumes:
+  vscode-server:
   npm-cache:
 
 networks:
