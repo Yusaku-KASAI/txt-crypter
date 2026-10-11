@@ -34,4 +34,4 @@ Cloudflare Pages が `main` をビルドして公開し、PR ごとにプレビ�
 ## 共通のルール
 
 コメントとドキュメントの書き方など、どのターゲットでも同じルールは、`.claude/settings.json` で有効にしている
-platform の rules プラグインが、セッションとサブエージェントの始めに読み込ませる。
+platform の conventions プラグインが、セッションとサブエージェントの始めに読み込ませる。
