@@ -14,6 +14,7 @@ jobs:
         include:
           - { check: web, file: .devcontainer/Dockerfile, target: check-web }
           - { check: target, file: .devcontainer/Dockerfile, target: check-target }
+          - { check: docs, file: .devcontainer/Dockerfile, target: check-docs }
           # The app's own image builds.
           - { check: image, file: Dockerfile, target: "" }
     runs-on: ubuntu-latest

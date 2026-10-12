@@ -1,7 +1,7 @@
-.PHONY: check check-web check-target
+.PHONY: check check-web check-target check-docs
 
 # One target per concern, so that CI can run each from only the files it reads.
-check: check-web check-target
+check: check-web check-target check-docs
 
 # Dependencies are installed when the lockfile is newer than what is installed.
 vue/node_modules/.package-lock.json: vue/package-lock.json
@@ -13,6 +13,9 @@ check-web: vue/node_modules/.package-lock.json
 check-target:
 	shellcheck .devcontainer/*.sh
 	python3 .devcontainer/check-vscode-settings.py
+
+check-docs:
+	python3 tools/check-docs.py
 
 .PHONY: up
 up:
