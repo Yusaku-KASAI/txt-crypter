@@ -11,7 +11,7 @@
 ## 公開と運用
 
 Cloudflare Pages が `main` をビルドして公開し、PR ごとにプレビューを作る。配っているのはビルドした静的なファイルだけで、
-開発サーバー（`make up`）は手元でしか動かさない。手元での動かし方は [README.md](README.md)。
+開発サーバー（`make up`）は手元でしか動かさない。手元での動かし方は [docs/guides/development.md](docs/guides/development.md "案内")。
 
 ## 守る互換
 
