@@ -11,7 +11,7 @@
 ## 公開と運用
 
 Cloudflare Pages が `main` をビルドして公開し、PR ごとにプレビューを作る。配っているのはビルドした静的なファイルだけで、
-開発サーバー（`make up`）は手元でしか動かさない。手元での動かし方は [README.md](README.md)。
+開発サーバー（`make up`）は手元でしか動かさない。手元での動かし方は [docs/guides/development.md](docs/guides/development.md "案内")。
 
 ## 守る互換
 
@@ -21,7 +21,7 @@ Cloudflare Pages が `main` をビルドして公開し、PR ごとにプレビ�
 
 ## 参照先
 
-- [docs/README.md](docs/README.md) — 文書の一覧（動かし方、開発環境、検査）
+- [docs/README.md](docs/README.md "案内") — 文書の一覧（動かし方、開発環境、検査）
 
 ## 作業の完了条件
 
@@ -34,4 +34,4 @@ Cloudflare Pages が `main` をビルドして公開し、PR ごとにプレビ�
 ## 共通のルール
 
 コメントとドキュメントの書き方など、どのターゲットでも同じルールは、`.claude/settings.json` で有効にしている
-platform の conventions プラグインが、セッションとサブエージェントの始めに読み込ませる。
+conventions プラグイン（acp-platform マーケットプレイスで配る）が、セッションとサブエージェントの始めに読み込ませる。

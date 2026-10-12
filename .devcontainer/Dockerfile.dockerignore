@@ -7,5 +7,7 @@
 .devcontainer/.env
 acp.yaml
 bin
+CLAUDE.local.md
+**/CLAUDE.local.md
 **/node_modules
 vue/dist
