@@ -12,7 +12,8 @@ services:
         TZ: ${TZ:-UTC}
         HOST_UID: ${HOST_UID:?run .devcontainer/init-host.sh}
         HOST_GID: ${HOST_GID:?run .devcontainer/init-host.sh}
-    # Agents run this image too.
+    # A fixed name, so that the control plane's config can run agents from this image
+    # (agents[].target.image).
     image: ${REPO_NAME}-devcontainer
     working_dir: /workspace/${REPO_NAME}
     volumes:
