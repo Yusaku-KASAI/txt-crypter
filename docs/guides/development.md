@@ -30,3 +30,4 @@ CI の仕組みは、target-template の [CI](https://github.com/Yusaku-KASAI/ag
 2. `make front-create` を実行する。プロジェクト名は `.`（今のディレクトリ）、パッケージ名はプロジェクトの名前にする。
 3. `.dockerignore` の `vue/node_modules` のコメントを戻し、`make reset` を実行する。
 4. `vite.config.js` のサーバーの設定で `host: true` にし、起動を確かめて、要ればポートを変える。
+5. 作られた `vue/README.md`（create-vue のひな形の説明）を消す。動かし方はこの文書にある。
